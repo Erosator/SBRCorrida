@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Steel Ball Run - A Corrida</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: #10151c;
+    color: #eee9d9;
+    font-family: Georgia, serif;
+    display: flex;
+    justify-content: center;
+    padding: 25px 12px;
+}
+
+#game {
+    width: 100%;
+    max-width: 850px;
+    background: #1b2631;
+    border: 2px solid #b99b5d;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 0 25px #000;
+}
+
+h1, h2 {
+    color: #e6c77b;
+    text-align: center;
+}
+
+h1 {
+    font-size: 36px;
+}
+
+h2 {
+    font-size: 26px;
+}
+
+p {
+    font-size: 18px;
+    line-height: 1.6;
+}
+
+.center {
+    text-align: center;
+}
+
+.status {
+    background: #101820;
+    border: 1px solid #b99b5d;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.status span {
+    color: #e6c77b;
+}
+
+button {
+    display: block;
+    width: 100%;
+    background: #344b5c;
+    color: white;
+    border: 1px solid #c3a66b;
+    border-radius: 7px;
+    padding: 15px;
+    margin: 12px 0;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+button:hover {
+    background: #a17b3e;
+    transform: scale(1.01);
+}
+
+.primary {
+    background: #84652e;
+    font-weight: bold;
+}
+
+.divider {
+    border: 0;
+    border-top: 1px solid #76613d;
+    margin: 25px 0;
+}
+
+.result {
+    background: #101820;
+    padding: 18px;
+    border-left: 4px solid #d5b56e;
+    margin: 20px 0;
+    border-radius: 5px;
+}
+
+.small {
+    color: #b9b4a6;
+    font-size: 14px;
+}
+
+@media(max-width: 550px) {
+    #game {
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 28px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div id="game">
+    <div id="content"></div>
+</div>
+
+<script>
+
+// ==========================================
+// CONFIGURAÇÕES DO JOGO
+// ==========================================
+
+const stands = [
+    "Tusk",
+    "Ball Breaker",
+    "Scary Monsters",
+    "Cream Starter",
+    "Ticket to Ride",
+    "Dirty Deeds Done Dirt Cheap",
+    "In a Silent Way",
+    "Tomb of the Boom",
+    "Boku no Rhythm wo Kiitekure",
+    "Wired",
+    "Oh! Lonesome Me",
+    "Catch the Rainbow",
+    "Sugar Mountain",
+    "Civil War",
+    "Chocolate Disco",
+    "20th Century Boy",
+    "Mandom",
+    "Hey Ya!",
+    "Tubular Bells",
+    "Tattoo You!"
+];
+
+// ==========================================
+// VARIÁVEIS DO JOGADOR
+// ==========================================
+
+let posicao = 0;
+let moedas = 0;
+
+let temStand = false;
+let nomeStand = "";
+
+let infectado = false;
+let descobriuPlano = false;
+
+let bonusStand = 0;
+
+// ==========================================
+// FUNÇÕES AUXILIARES
+// ==========================================
+
+function aleatorio(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function sobreviver(chance) {
+    return Math.random() * 100 < chance;
+}
+
+function atualizarPosicao(min, max) {
+    posicao = aleatorio(min, max);
+
+    if (temStand) {
+        posicao = Math.max(1, posicao - 50);
+    }
+}
+
+function status() {
+    return `
+        <div class="status">
+            <div>🏁 Posição: <span>${posicao}º</span></div>
+            <div>💰 Moedas: <span>${moedas}</span></div>
+            <div>⭐ Stand: <span>${temStand ? nomeStand : "Nenhum"}</span></div>
+        </div>
+    `;
+}
+
+function mostrar(texto) {
+    document.getElementById("content").innerHTML = texto;
+}
+
+function terminar(titulo, texto) {
+    mostrar(`
+        <h1>${titulo}</h1>
+
+        <div class="result">
+            <p>${texto}</p>
+        </div>
+
+        ${status()}
+
+        <button class="primary" onclick="location.reload()">
+            Tentar novamente
+        </button>
+    `);
+}
+
+// ==========================================
+// TELA INICIAL
+// ==========================================
+
+function inicio() {
+    mostrar(`
+        <h1>STEEL BALL RUN</h1>
+        <h2>Ganhe a Steel Ball Run!</h2>
+
+        <div class="result">
+            <p class="center">
+                Uma corrida atravessando o continente.
+                Milhares de competidores, perigos inexplicáveis
+                e um prêmio que pode mudar o mundo.
+            </p>
+
+            <p class="center">
+                Suas decisões determinarão seu destino.
+                Você conseguirá chegar ao fim?
+            </p>
+        </div>
+
+        <button class="primary" onclick="ato1()">
+            COMEÇAR A CORRIDA
+        </button>
+
+        <p class="small center">
+            Steel Ball Run — Uma corrida onde sobreviver
+            já é uma vitória.
+        </p>
+    `);
+}
+
+// ==========================================
+// ATO 1 - ESCOLHA DO CAMINHO
+// ==========================================
+
+function ato1() {
+    mostrar(`
+        <h1>ATO 1</h1>
+        <h2>O início da corrida</h2>
+
+        <p>
+            A corrida começou! Você precisa escolher
+            qual caminho seguirá para continuar na competição.
+        </p>
+
+        <div class="result">
+            <h3>Caminho 1 — Passagem longa</h3>
+            <p>
+                Um percurso mais demorado, mas relativamente seguro.
+            </p>
+        </div>
+
+        <button onclick="escolherAto1(1)">
+            Escolher caminho 1
+        </button>
+
+        <div class="result">
+            <h3>Caminho 2 — Passagem curta</h3>
+            <p>
+                Um percurso mais rápido, porém extremamente perigoso.
+            </p>
+        </div>
+
+        <button onclick="escolherAto1(2)">
+            Escolher caminho 2
+        </button>
+    `);
+}
+
+function escolherAto1(caminho) {
+
+    let chance = caminho === 1 ? 95 : 67;
+
+    if (sobreviver(chance)) {
+
+        if (caminho === 1) {
+            atualizarPosicao(500, 10000);
+        } else {
+            atualizarPosicao(1, 499);
+        }
+
+        moedas += Math.max(1, Math.floor((10001 - posicao) / 10));
+
+        mostrar(`
+            <h1>ATO 1 — VITÓRIA</h1>
+
+            <div class="result">
+                <p>
+                    Você conseguiu sobreviver ao primeiro percurso!
+                    A competição continua e sua posição já está definida.
+                </p>
+
+                <p>Você recebeu moedas pela sua colocação!</p>
+            </div>
+
+            ${status()}
+
+            <button class="primary" onclick="ato2()">
+                AVANÇAR PARA O ATO 2
+            </button>
+        `);
+
+    } else {
+
+        if (caminho === 1) {
+            terminar(
+                "QUE VERGONHA!",
+                "Você morreu mesmo escolhendo o caminho mais seguro. Que fraco! Não estava preparado para essa corrida."
+            );
+        } else {
+            terminar(
+                "MORTE POR GANÂNCIA",
+                "Sua ganância por um caminho mais curto acabou com você. Morreu tentando conseguir uma vantagem."
+            );
+        }
+    }
+}
+
+// ==========================================
+// ATO 2 - COMPETIDORES
+// ==========================================
+
+function ato2() {
+    mostrar(`
+        <h1>ATO 2</h1>
+        <h2>Os competidores</h2>
+
+        <p>
+            A corrida continua. Agora você precisa enfrentar
+            outros competidores extremamente habilidosos.
+        </p>
+
+        <div class="result">
+            <h3>Caminho 1</h3>
+            <p>Corra contra Diego Brando.</p>
+        </div>
+
+        <button onclick="escolherAto2(1)">
+            Correr contra Diego Brando
+        </button>
+
+        <div class="result">
+            <h3>Caminho 2</h3>
+            <p>Corra contra Gyro e Johnny.</p>
+        </div>
+
+        <button onclick="escolherAto2(2)">
+            Correr contra Gyro e Johnny
+        </button>
+    `);
+}
+
+function escolherAto2(caminho) {
+
+    // O adversário é definido exclusivamente pela escolha do jogador.
+    const nome = caminho === 1
+        ? "Diego Brando"
+        : "Gyro e Johnny";
+
+    // Evento secreto: pode acontecer independentemente da escolha.
+    // Ele altera a dificuldade, mas nunca troca o adversário escolhido.
+    let eventoAleatorio = Math.random() < 0.25;
+    let chance = eventoAleatorio ? 25 : 67;
+
+    if (sobreviver(chance)) {
+
+        atualizarPosicao(1, eventoAleatorio ? 999 : 1000);
+
+        let acrescimo = 0;
+
+        if (eventoAleatorio) {
+            acrescimo = aleatorio(67, 670);
+            posicao += acrescimo;
+        }
+
+        mostrar(`
+            <h1>ATO 2 — VITÓRIA</h1>
+
+            <div class="result">
+                <p>
+                    Você conseguiu superar ${nome}!
+                </p>
+
+                ${eventoAleatorio
+                    ? `<p>
+                        Um acontecimento inesperado mudou
+                        completamente o percurso da corrida!
+                        Sua posição foi alterada em ${acrescimo} lugares.
+                      </p>`
+                    : `<p>
+                        Você conseguiu avançar normalmente
+                        pela etapa e continua na competição.
+                      </p>`
+                }
+            </div>
+
+            ${status()}
+
+            <button class="primary" onclick="ato3()">
+                AVANÇAR PARA O ATO 3
+            </button>
+        `);
+
+    } else {
+
+        if (eventoAleatorio) {
+            terminar(
+                "EVENTO FATAL",
+                `O acontecimento inesperado mudou completamente o percurso enquanto você enfrentava ${nome}. Você foi surpreendido e não conseguiu sobreviver.`
+            );
+        } else {
+            terminar(
+                "DERROTA VERGONHOSA",
+                `Você foi derrotado por ${nome} em um percurso que deveria ser relativamente simples. Que humilhação!`
+            );
+        }
+    }
+}
+
+// ==========================================
+// ATO 3 - PALMA DO DIABO
+// ==========================================
+
+function ato3() {
+    mostrar(`
+        <h1>ATO 3</h1>
+        <h2>A Palma do Diabo</h2>
+
+        <p>
+            Você entra em um local extremamente hostil,
+            com pessoas que possuem poderes estranhos
+            e completamente inexplicáveis.
+        </p>
+
+        <p>Você tem duas opções:</p>
+
+        <div class="result">
+            <h3>Arriscar tudo pela vitória</h3>
+            <p>
+                Você enfrenta diretamente esse ambiente hostil.
+            </p>
+        </div>
+
+        <button onclick="escolherAto3(1)">
+            Arriscar tudo
+        </button>
+
+        <div class="result">
+            <h3>Lucidez</h3>
+            <p>
+                Abandone o local e continue a corrida
+                pelo caminho mais longo.
+            </p>
+        </div>
+
+        <button onclick="escolherAto3(2)">
+            Escolher a lucidez
+        </button>
+    `);
+}
+
+function escolherAto3(caminho) {
+
+    // PALMA DO DIABO: 40% DE CHANCE DE SOBREVIVÊNCIA
+    // LUCIDEZ: 50% DE CHANCE DE SOBREVIVÊNCIA
+    let chance = caminho === 1 ? 40 : 50;
+
+    if (sobreviver(chance)) {
+
+        if (caminho === 1) {
+
+            atualizarPosicao(1, 250);
+
+            temStand = true;
+            nomeStand = stands[aleatorio(0, stands.length - 1)];
+            bonusStand = 20;
+
+            mostrar(`
+                <h1>ATO 3 — PODER DESPERTADO</h1>
+
+                <div class="result">
+                    <p>
+                        Você sobreviveu ao ambiente hostil
+                        e recebeu uma recompensa inexplicável!
+                    </p>
+
+                    <h2>SEU STAND:</h2>
+                    <h1>${nomeStand}</h1>
+
+                    <p>
+                        Uma força inexplicável agora acompanha você.
+                        Seus próximos desafios serão diferentes.
+                    </p>
+
+                    <p>
+                        Sua posição no ranking também recebeu uma vantagem.
+                    </p>
+                </div>
+
+                ${status()}
+
+                <button class="primary" onclick="ato4()">
+                    AVANÇAR PARA A PENÚLTIMA ETAPA
+                </button>
+            `);
+
+        } else {
+
+            atualizarPosicao(251, 500);
+
+            mostrar(`
+                <h1>ATO 3 — SOBREVIVÊNCIA</h1>
+
+                <div class="result">
+                    <p>
+                        Você escolheu o caminho mais longo e
+                        conseguiu continuar a corrida.
+                    </p>
+
+                    <p>
+                        Durante o percurso, você escuta histórias
+                        estranhas sobre a Palma do Diabo.
+                    </p>
+
+                    <p>
+                        Dizem que as pessoas que sobreviveram
+                        naquele lugar foram recompensadas...
+                    </p>
+                </div>
+
+                ${status()}
+
+                <button class="primary" onclick="ato4()">
+                    AVANÇAR PARA A PENÚLTIMA ETAPA
+                </button>
+            `);
+        }
+
+    } else {
+
+        if (caminho === 1) {
+            terminar(
+                "O PREÇO DA GANÂNCIA",
+                "A ganância por um caminho mais curto te consumiu. Você morreu tentando conseguir algo que não estava preparado para enfrentar."
+            );
+        } else {
+            terminar(
+                "A COVARDIA",
+                "Até quando a covardia vai te guiar? Que vexatório. Você não conseguiu sobreviver ao caminho escolhido."
+            );
+        }
+    }
+}
+
+// ==========================================
+// PENÚLTIMA ETAPA - DOIS HOMENS
+// ==========================================
+
+function ato4() {
+
+    mostrar(`
+        <h1>PENÚLTIMA ETAPA</h1>
+        <h2>Dois homens</h2>
+
+        <p>
+            Um homem com poderes de dinossauro te segue,
+            mas estranhamente você passa a enxergar dois deles.
+        </p>
+
+        <p>Escolha um para enfrentar:</p>
+
+        <div class="result">
+            <h3>O homem do dinossauro</h3>
+            <p>
+                Você decide enfrentar o homem que possui
+                habilidades de dinossauro.
+            </p>
+        </div>
+
+        <button onclick="escolherAto4(1)">
+            Enfrentar o homem do dinossauro
+        </button>
+
+        <div class="result">
+            <h3>O homem estranho</h3>
+            <p>
+                Uma figura misteriosa cujas habilidades
+                parecem desafiar a própria realidade.
+            </p>
+        </div>
+
+        <button onclick="escolherAto4(2)">
+            Enfrentar o homem estranho
+        </button>
+    `);
+}
+
+function escolherAto4(caminho) {
+
+    let chance = (caminho === 1 ? 60 : 40) + bonusStand;
+
+    if (sobreviver(chance)) {
+
+        if (caminho === 1) {
+
+            atualizarPosicao(1, 100);
+
+            // Chance secreta de infecção
+            infectado = Math.random() < 0.5;
+
+            mostrar(`
+                <h1>VOCÊ VENCEU!</h1>
+
+                <div class="result">
+                    <p>
+                        Você derrotou o homem do dinossauro
+                        e conseguiu chegar a uma posição
+                        entre os 100 melhores!
+                    </p>
+
+                    <p>
+                        Agora falta apenas uma etapa para
+                        conquistar a Steel Ball Run.
+                    </p>
+                </div>
+
+                ${status()}
+
+                <button class="primary" onclick="lutaFinal()">
+                    ENFRENTAR VALENTINE
+                </button>
+            `);
+
+        } else {
+
+            atualizarPosicao(1, 250);
+
+            descobriuPlano = true;
+
+            mostrar(`
+                <h1>VOCÊ VENCEU!</h1>
+
+                <div class="result">
+                    <p>
+                        Você conseguiu decifrar os poderes
+                        do tempo daquele homem e o derrotou.
+                    </p>
+
+                    <p>
+                        Descobriu que ele era um clone de
+                        outra dimensão enviado por Valentine.
+                    </p>
+
+                    <p>
+                        Você descobriu o plano de Valentine!
+                        Seu conhecimento pode ser decisivo
+                        no confronto final.
+                    </p>
+                </div>
+
+                ${status()}
+
+                <button class="primary" onclick="lutaFinal()">
+                    ENFRENTAR VALENTINE
+                </button>
+            `);
+        }
+
+    } else {
+
+        if (caminho === 1) {
+            terminar(
+                "O FIM DA SUA HUMANIDADE",
+                "Você foi derrotado e passou a se tornar um dinossauro, virando servo daquele homem."
+            );
+        } else {
+            terminar(
+                "MORTE PELO DESCONHECIDO",
+                "Você foi morto por querer enfrentar o diferente. Sua jornada termina aqui."
+            );
+        }
+    }
+}
+
+// ==========================================
+// LUTA FINAL - FUNNY VALENTINE
+// ==========================================
+
+function lutaFinal() {
+
+    let chance = 20;
+
+    if (infectado) {
+        chance -= 10;
+    }
+
+    if (descobriuPlano) {
+        chance += 20;
+    }
+
+    chance = Math.max(0, Math.min(100, chance));
+
+    mostrar(`
+        <h1>ATO FINAL</h1>
+        <h2>Funny Valentine</h2>
+
+        <p>
+            Valentine aparece diante de você.
+            Você descobre o plano final dele e agora
+            precisa enfrentá-lo.
+        </p>
+
+        <p>
+            Ele é o último obstáculo para o fim da corrida.
+        </p>
+
+        <div class="result">
+            <h2>A BATALHA FINAL</h2>
+
+            <p>
+                Sua jornada inteira levou até este momento.
+                Agora não existe mais volta.
+            </p>
+        </div>
+
+        <button class="primary" onclick="resultadoFinal(${chance})">
+            LUTAR CONTRA VALENTINE
+        </button>
+    `);
+}
+
+function resultadoFinal(chance) {
+
+    let venceu = sobreviver(chance);
+
+    if (venceu && !infectado) {
+
+        terminar(
+            "VOCÊ GANHOU A STEEL BALL RUN!",
+            "Você derrotou Funny Valentine, superou todos os obstáculos e conquistou a Steel Ball Run! O prêmio agora é seu. Sua jornada entrou para a história."
+        );
+
+    } else if (venceu && infectado) {
+
+        terminar(
+            "UMA VITÓRIA AMALDIÇOADA",
+            "Você fez o inevitável e derrotou o presidente! A Steel Ball Run agora é sua. Porém, dois anos depois, a infecção finalmente o consumiu. Você se transformou em um dinossauro e exterminou sua própria família. Uma vitória que custou tudo."
+        );
+
+    } else if (!venceu && !infectado) {
+
+        terminar(
+            "O PRESIDENTE VENCEU",
+            "Funny Valentine era forte demais. Você foi derrotado. O presidente conseguiu todas as partes do Cadáver Santo e se tornou o homem mais poderoso do mundo."
+        );
+
+    } else {
+
+        // Chance secreta de 50% de derrotar Valentine
+        let chanceDinossauro = Math.random() < 0.5;
+
+        if (chanceDinossauro) {
+
+            terminar(
+                "DESTRUIÇÃO MÚTUA",
+                "Você perdeu a luta inicial, mas a transformação em dinossauro lhe deu uma última chance. Você conseguiu derrotar Valentine, porém ambos morreram. Sua história terminou em tragédia e você se tornou um terrorista."
+            );
+
+        } else {
+
+            terminar(
+                "O FIM DA CORRIDA",
+                "Mesmo transformado em dinossauro, você não conseguiu derrotar Valentine. O presidente conquistou todas as partes do Cadáver Santo. Sua última tentativa terminou em fracasso."
+            );
+        }
+    }
+}
+
+// ==========================================
+// INICIAR JOGO
+// ==========================================
+
+inicio();
+
+</script>
+
+</body>
+</html>
